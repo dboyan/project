@@ -1,13 +1,17 @@
 range.cmo: range.cmi
 range.cmx: range.cmi
 core.cmi: support.cmi syntax.cmi range.cmi
-parser.cmi: support.cmi syntax.cmi 
+parser.cmi: support.cmi syntax.cmi range.cmi
 syntax.cmi: support.cmi 
 core.cmo: support.cmi syntax.cmi core.cmi 
 core.cmx: support.cmx syntax.cmx core.cmi 
-main.cmo: core.cmi support.cmi syntax.cmi 
-main.cmx: core.cmx support.cmx syntax.cmx 
+lexer.cmo: parser.cmi support.cmi 
+lexer.cmx: parser.cmx support.cmx 
+main.cmo: core.cmi lexer.cmo parser.cmi support.cmi syntax.cmi 
+main.cmx: core.cmx lexer.cmx parser.cmx support.cmx syntax.cmx 
+parser.cmo: support.cmi syntax.cmi parser.cmi range.cmi
+parser.cmx: support.cmx syntax.cmx parser.cmi range.cmi
 support.cmo: support.cmi 
 support.cmx: support.cmi 
-syntax.cmo: support.cmi range.cmi syntax.cmi 
-syntax.cmx: support.cmx range.cmi syntax.cmi 
+syntax.cmo: support.cmi syntax.cmi range.cmi
+syntax.cmx: support.cmx syntax.cmi range.cmi

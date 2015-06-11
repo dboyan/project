@@ -15,7 +15,9 @@
 
 # These are the object files needed to rebuild the main executable file
 #
-OBJS = support.cmo range.cmo syntax.cmo core.cmo main.cmo
+OBJS = support.cmo range.cmo syntax.cmo core.cmo parser.cmo lexer.cmo main.cmo
+
+DEPEND += lexer.ml parser.ml
 
 # When "make" is invoked with no arguments, we build an executable 
 # typechecker, after building everything that it depends on
@@ -40,7 +42,7 @@ f.exe: $(OBJS) main.cmo
 
 # Build and test
 test: all
-	./f
+	./f test.f
 
 # Compile an ML module interface
 %.cmi : %.mli
@@ -50,9 +52,22 @@ test: all
 %.cmo : %.ml
 	ocamlc -c $<
 
+# Generate ML files from a parser definition file
+parser.ml parser.mli: parser.mly
+	@rm -f parser.ml parser.mli
+	ocamlyacc -v parser.mly
+	@chmod -w parser.ml parser.mli
+
+# Generate ML files from a lexer definition file
+%.ml %.mli: %.mll
+	@rm -f $@
+	ocamllex $<
+	@chmod -w $@
+
 # Clean up the directory
 clean::
-	rm -rf *.o *.cmo *.cmi f f.exe TAGS *~ *.bak
+	rm -rf lexer.ml parser.ml parser.mli *.o *.cmo *.cmi parser.output \
+	f f.exe TAGS *~ *.bak
 
 # Rebuild intermodule dependencies
 depend:: $(DEPEND) 

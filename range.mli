@@ -1,4 +1,5 @@
 
+val simplify_range : (int * int) list -> (int * int) list
 val print_range : (int * int) list -> unit
 val add_range : (int * int) list -> (int * int) list -> (int * int) list
 val minus_range : (int * int) list -> (int * int) list -> (int * int) list
