@@ -41,12 +41,17 @@ type term =
   | TmIsZero of info * term
   | TmInert of info * ty
   | TmInt of info * int
+  | TmError of info
   | TmPlus of info * term * term
+  | TmPlusEx of info * term * term
   | TmMinus of info * term * term
+  | TmMinusEx of info * term * term
   | TmGreater of info * term * term
   | TmGreaterEqual of info * term * term
   | TmLess of info * term * term
   | TmLessEqual of info * term * term
+  | TmTry of info * term * term
+  | TmCast of info * term * (int * int) list
 
 type binding =
     NameBind 

@@ -35,10 +35,16 @@ let reservedWords = [
   ("pred", fun i -> Parser.PRED i);
   ("iszero", fun i -> Parser.ISZERO i);
   ("Nat", fun i -> Parser.NAT i);
+  ("try", fun i -> Parser.TRY i);
+  ("with", fun i -> Parser.WITH i);
+  ("error", fun i -> Parser.ERROR i);
+  ("cast", fun i -> Parser.CAST i);
   
   (* Symbols *)
   ("+", fun i -> Parser.PLUS i);
+  ("+?", fun i -> Parser.PLUSEX i);
   ("-", fun i -> Parser.MINUS i);
+  ("-?", fun i -> Parser.MINUSEX i);
   ("_", fun i -> Parser.USCORE i);
   ("'", fun i -> Parser.APOSTROPHE i);
   ("\"", fun i -> Parser.DQUOTE i);
@@ -172,6 +178,7 @@ rule main = parse
 
 | ":=" | "<:" | "<-" | "->" | "=>" | "==>"
 | "{|" | "|}" | "<|" | "|>" | "[|" | "|]" | "=="
+| ">=" | "<=" | "+?" | "-?"
     { createID (info lexbuf) (text lexbuf) }
 
 | ['~' '%' '\\' '+' '-' '&' '|' ':' '@' '`' '$']+

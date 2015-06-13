@@ -47,6 +47,10 @@ open Range
 %token <Support.Error.info> PRED
 %token <Support.Error.info> ISZERO
 %token <Support.Error.info> NAT
+%token <Support.Error.info> TRY
+%token <Support.Error.info> WITH
+%token <Support.Error.info> ERROR
+%token <Support.Error.info> CAST
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -87,7 +91,9 @@ open Range
 %token <Support.Error.info> LT
 %token <Support.Error.info> LE
 %token <Support.Error.info> MINUS
+%token <Support.Error.info> MINUSEX
 %token <Support.Error.info> PLUS
+%token <Support.Error.info> PLUSEX
 %token <Support.Error.info> RCURLY
 %token <Support.Error.info> RPAREN
 %token <Support.Error.info> RSQUARE
@@ -178,16 +184,16 @@ AType :
       { fun ctx -> TyFloat }
   | NAT 
       { fun ctx -> TyNat }
-  | RANGELIST
+  | RangeList
       { fun ctx -> TyInt(simplify_range $1) }
 
-RANGELIST :
-    RANGE
+RangeList :
+    Range
       { [$1] }
-  | RANGE RANGELIST
+  | Range RangeList
       { $1 :: $2 }
 
-RANGE :
+Range :
     LSQUARE INTV COMMA INTV RSQUARE
       { ($2.v, $4.v) }
 
@@ -228,6 +234,10 @@ Term :
           let ctx1 = addname ctx $2.v in 
           TmLet($1, $2.v, TmFix($1, TmAbs($1, $2.v, $4 ctx, $6 ctx1)),
                 $8 ctx1) }
+  | TRY Term WITH Term
+      { fun ctx -> TmTry($1, $2 ctx, $4 ctx) }
+  | CAST RangeList Term
+      { fun ctx -> TmCast($1, $3 ctx, $2) }
 
 AppTerm :
     PathTerm
@@ -250,8 +260,12 @@ AppTerm :
       { fun ctx -> TmIsZero($1, $2 ctx) }
   | PLUS PathTerm PathTerm
       { fun ctx -> TmPlus($1, $2 ctx, $3 ctx) }
+  | PLUSEX PathTerm PathTerm
+      { fun ctx -> TmPlusEx($1, $2 ctx, $3 ctx) }
   | MINUS PathTerm PathTerm
       { fun ctx -> TmMinus($1, $2 ctx, $3 ctx) }
+  | MINUSEX PathTerm PathTerm
+      { fun ctx -> TmMinusEx($1, $2 ctx, $3 ctx) }
   | GT PathTerm PathTerm
       { fun ctx -> TmGreater($1, $2 ctx, $3 ctx) }
   | GE PathTerm PathTerm
@@ -326,6 +340,8 @@ ATerm :
       { fun ctx -> TmFloat($1.i, $1.v) }
   | INTV
       { fun ctx -> TmInt($1.i, $1.v) }
+  | ERROR
+      { fun ctx -> TmError($1) }
 
 Fields :
     /* empty */
