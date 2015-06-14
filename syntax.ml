@@ -151,6 +151,8 @@ let tmmap onvar ontype c t =
   | TmInt(fi,num) -> TmInt(fi,num)
   | TmPlus(fi,t1,t2) -> TmPlus(fi, walk c t1, walk c t2)
   | TmMinus(fi,t1,t2) -> TmMinus(fi, walk c t1, walk c t2)
+  | TmPlusEx(fi,t1,t2) -> TmPlusEx(fi,walk c t1,walk c t2)
+  | TmMinusEx(fi,t1,t2) -> TmMinusEx(fi,walk c t1,walk c t2)
   | TmGreater(fi,t1,t2) -> TmGreater(fi, walk c t1, walk c t2)
   | TmGreaterEqual(fi,t1,t2) -> TmGreaterEqual(fi, walk c t1, walk c t2)
   | TmLess(fi,t1,t2) -> TmLess(fi, walk c t1, walk c t2)
@@ -262,6 +264,8 @@ let tmInfo t = match t with
   | TmInt(fi,_) -> fi 
   | TmPlus(fi,_,_) -> fi 
   | TmMinus(fi,_,_) -> fi 
+  | TmPlusEx(fi,_,_) -> fi
+  | TmMinusEx(fi,_,_) -> fi
   | TmGreater(fi,_,_) -> fi 
   | TmGreaterEqual(fi,_,_) -> fi 
   | TmLess(fi,_,_) -> fi 
@@ -362,6 +366,14 @@ let rec printtm_Term outer ctx t = match t with
        pr "else ";
        printtm_Term false ctx t3;
        cbox()
+  | TmTry(fi, t1, t2) ->
+       obox0();
+       pr "try ";
+       printtm_Term false ctx t1;
+       print_space();
+       pr "with ";
+       printtm_Term false ctx t2;
+       cbox()
   | TmLet(fi, x, t1, t2) ->
        obox0();
        pr "let "; pr x; pr " = "; 
@@ -386,6 +398,20 @@ let rec printtm_Term outer ctx t = match t with
        printtm_Term false ctx t1;
        print_space();
        pr "- ";
+       printtm_Term false ctx t2;
+       cbox();
+  | TmPlusEx(fi, t1, t2) ->
+       obox();
+       printtm_Term false ctx t1;
+       print_space();
+       pr "+? ";
+       printtm_Term false ctx t2;
+       cbox();
+  | TmMinusEx(fi, t1, t2) ->
+       obox();
+       printtm_Term false ctx t1;
+       print_space();
+       pr "-? ";
        printtm_Term false ctx t2;
        cbox();
   | TmGreater(fi, t1, t2) ->
@@ -415,6 +441,13 @@ let rec printtm_Term outer ctx t = match t with
        print_space();
        pr "<= ";
        printtm_Term false ctx t2;
+       cbox();
+  | TmCast(fi,t1,r1) ->
+       obox();
+       pr "cast ";
+       print_range r1;
+       print_space();
+       printtm_Term false ctx t1;
        cbox();
   | t -> printtm_AppTerm outer ctx t
 

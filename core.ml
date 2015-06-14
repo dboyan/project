@@ -392,6 +392,20 @@ let rec typeof ctx t =
       (match ty1, ty2 with
         TyInt(l1), TyInt(l2) -> TyInt(minus_range l1 l2)
       | _, _ -> error fi "terms not int")
+  | TmPlusEx(fi,t1,t2) ->
+      let ty1 = typeof ctx t1 in
+      let ty2 = typeof ctx t2 in
+      (match ty1, ty2 with
+        TyInt(_), TyInt(_) ->
+          TyInt([(0,65535)])
+       | _ -> error fi "terms not int")
+  | TmMinusEx(fi,t1,t2) ->
+      let ty1 = typeof ctx t1 in
+      let ty2 = typeof ctx t2 in
+      (match ty1, ty2 with
+        TyInt(_), TyInt(_) ->
+          TyInt([(0,65535)])
+       | _ -> error fi "terms not int")
   | TmGreater(fi,t1,t2) | TmGreaterEqual(fi,t1,t2) | TmLess(fi,t1,t2) | TmLessEqual(fi,t1,t2) ->
       let ty1 = typeof ctx t1 in
       let ty2 = typeof ctx t2 in
