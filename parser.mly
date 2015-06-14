@@ -44,10 +44,7 @@ open Range
 %token <Support.Error.info> AS
 %token <Support.Error.info> TIMESFLOAT
 %token <Support.Error.info> UFLOAT
-%token <Support.Error.info> SUCC
-%token <Support.Error.info> PRED
 %token <Support.Error.info> ISZERO
-%token <Support.Error.info> NAT
 %token <Support.Error.info> TRY
 %token <Support.Error.info> WITH
 %token <Support.Error.info> ERROR
@@ -185,8 +182,6 @@ AType :
       { fun ctx -> TyUnit }
   | UFLOAT
       { fun ctx -> TyFloat }
-  | NAT 
-      { fun ctx -> TyNat }
   | RangeList
       { fun ctx -> TyInt(simplify_range $1) }
 
@@ -255,10 +250,6 @@ AppTerm :
           TmFix($1, $2 ctx) }
   | TIMESFLOAT PathTerm PathTerm
       { fun ctx -> TmTimesfloat($1, $2 ctx, $3 ctx) }
-  | SUCC PathTerm
-      { fun ctx -> TmSucc($1, $2 ctx) }
-  | PRED PathTerm
-      { fun ctx -> TmPred($1, $2 ctx) }
   | ISZERO PathTerm
       { fun ctx -> TmIsZero($1, $2 ctx) }
   | PLUS PathTerm PathTerm

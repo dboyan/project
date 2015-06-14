@@ -8,9 +8,8 @@ open Range
 
 exception NoRuleApplies
 
-let rec isnumericval ctx t = match t with
-    TmZero(_) -> true
-  | TmSucc(_,t1) -> isnumericval ctx t1
+let rec isnumericty ctx t = match t with
+    TyInt(_) -> true
   | _ -> false
 
 let rec isval ctx t = match t with
@@ -19,7 +18,6 @@ let rec isval ctx t = match t with
   | TmString _  -> true
   | TmUnit(_)  -> true
   | TmFloat _  -> true
-  | t when isnumericval ctx t  -> true
   | TmAbs(_,_,_,_) -> true
   | TmRecord(_,fields) -> List.for_all (fun (l,ti) -> isval ctx ti) fields
   | TmInt(_,_) -> true
@@ -93,20 +91,8 @@ let rec eval1 ctx t = match t with
   | TmTimesfloat(fi,t1,t2) ->
       let t1' = eval1 ctx t1 in
       TmTimesfloat(fi,t1',t2) 
-  | TmSucc(fi,t1) ->
-      let t1' = eval1 ctx t1 in
-      TmSucc(fi, t1')
-  | TmPred(_,TmZero(_)) ->
-      TmZero(dummyinfo)
-  | TmPred(_,TmSucc(_,nv1)) when (isnumericval ctx nv1) ->
-      nv1
-  | TmPred(fi,t1) ->
-      let t1' = eval1 ctx t1 in
-      TmPred(fi, t1')
-  | TmIsZero(_,TmZero(_)) ->
-      TmTrue(dummyinfo)
-  | TmIsZero(_,TmSucc(_,nv1)) when (isnumericval ctx nv1) ->
-      TmFalse(dummyinfo)
+  | TmIsZero(_,TmInt(_,n1)) ->
+      if n1 = 0 then TmTrue(dummyinfo) else TmFalse(dummyinfo)
   | TmIsZero(fi,t1) ->
       let t1' = eval1 ctx t1 in
       TmIsZero(fi, t1')
@@ -214,7 +200,6 @@ let rec tyeqv ctx tyS tyT =
       tyeqv ctx tyS (gettyabb ctx i)
   | (TyVar(i,_),TyVar(j,_)) -> i=j
   | (TyBool,TyBool) -> true
-  | (TyNat,TyNat) -> true
   | (TyRecord(fields1),TyRecord(fields2)) -> 
        List.length fields1 = List.length fields2
        &&                                         
@@ -365,16 +350,8 @@ let rec typeof ctx t =
       if subtype ctx (typeof ctx t1) TyFloat
       && subtype ctx (typeof ctx t2) TyFloat then TyFloat
       else error fi "argument of timesfloat is not a number"
-  | TmZero(fi) ->
-      TyNat
-  | TmSucc(fi,t1) ->
-      if subtype ctx (typeof ctx t1) TyNat then TyNat
-      else error fi "argument of succ is not a number"
-  | TmPred(fi,t1) ->
-      if subtype ctx (typeof ctx t1) TyNat then TyNat
-      else error fi "argument of pred is not a number"
   | TmIsZero(fi,t1) ->
-      if subtype ctx (typeof ctx t1) TyNat then TyBool
+      if isnumericty ctx (typeof ctx t1) then TyBool
       else error fi "argument of iszero is not a number"
   | TmInt(fi,num) -> TyInt([(num,num)])
   | TmPlus(fi,t1,t2) -> 

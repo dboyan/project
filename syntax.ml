@@ -17,7 +17,6 @@ type ty =
   | TyString
   | TyUnit
   | TyFloat
-  | TyNat
   | TyInt of (int * int) list
 
 type term =
@@ -36,9 +35,6 @@ type term =
   | TmAscribe of info * term * ty
   | TmFloat of info * float
   | TmTimesfloat of info * term * term
-  | TmZero of info
-  | TmSucc of info * term
-  | TmPred of info * term
   | TmIsZero of info * term
   | TmInert of info * ty
   | TmInt of info * int
@@ -120,7 +116,6 @@ let tymap onvar c tyT =
   | TyString -> TyString
   | TyUnit -> TyUnit
   | TyFloat -> TyFloat
-  | TyNat -> TyNat
   | TyInt(l) -> TyInt(l)
   in walk c tyT
 
@@ -144,9 +139,6 @@ let tmmap onvar ontype c t =
   | TmAscribe(fi,t1,tyT1) -> TmAscribe(fi,walk c t1,ontype c tyT1)
   | TmFloat _ as t -> t
   | TmTimesfloat(fi,t1,t2) -> TmTimesfloat(fi, walk c t1, walk c t2)
-  | TmZero(fi)      -> TmZero(fi)
-  | TmSucc(fi,t1)   -> TmSucc(fi, walk c t1)
-  | TmPred(fi,t1)   -> TmPred(fi, walk c t1)
   | TmIsZero(fi,t1) -> TmIsZero(fi, walk c t1)
   | TmInt(fi,num) -> TmInt(fi,num)
   | TmPlus(fi,t1,t2) -> TmPlus(fi, walk c t1, walk c t2)
@@ -257,9 +249,6 @@ let tmInfo t = match t with
   | TmAscribe(fi,_,_) -> fi
   | TmFloat(fi,_) -> fi
   | TmTimesfloat(fi,_,_) -> fi
-  | TmZero(fi) -> fi
-  | TmSucc(fi,_) -> fi
-  | TmPred(fi,_) -> fi
   | TmIsZero(fi,_) -> fi 
   | TmInt(fi,_) -> fi 
   | TmPlus(fi,_,_) -> fi 
@@ -341,7 +330,6 @@ and printty_AType outer ctx tyT = match tyT with
   | TyString -> pr "String"
   | TyUnit -> pr "Unit"
   | TyFloat -> pr "Float"
-  | TyNat -> pr "Nat"
   | TyInt(l) -> pr "Int: "; print_range l
   | tyT -> pr "("; printty_Type outer ctx tyT; pr ")"
 
@@ -461,10 +449,6 @@ and printtm_AppTerm outer ctx t = match t with
   | TmTimesfloat(_,t1,t2) ->
        pr "timesfloat "; printtm_ATerm false ctx t2; 
        pr " "; printtm_ATerm false ctx t2
-  | TmPred(_,t1) ->
-       pr "pred "; printtm_ATerm false ctx t1
-  | TmIsZero(_,t1) ->
-       pr "iszero "; printtm_ATerm false ctx t1
   | t -> printtm_PathTerm outer ctx t
 
 and printtm_PathTerm outer ctx t = match t with
@@ -507,14 +491,6 @@ and printtm_ATerm outer ctx t = match t with
   | TmString(_,s) -> pr ("\"" ^ s ^ "\"")
   | TmUnit(_) -> pr "unit"
   | TmFloat(_,s) -> pr (string_of_float s)
-  | TmZero(fi) ->
-       pr "0"
-  | TmSucc(_,t1) ->
-     let rec f n t = match t with
-         TmZero(_) -> pr (string_of_int n)
-       | TmSucc(_,s) -> f (n+1) s
-       | _ -> (pr "(succ "; printtm_ATerm false ctx t1; pr ")")
-     in f 1 t1
   | TmInt(_,num) -> print_int num
   | TmError(_) -> pr "error"
   | t -> pr "("; printtm_Term outer ctx t; pr ")"

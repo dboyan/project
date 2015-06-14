@@ -32,10 +32,7 @@ let reservedWords = [
   ("as", fun i -> Parser.AS i);
   ("timesfloat", fun i -> Parser.TIMESFLOAT i);
   ("Float", fun i -> Parser.UFLOAT i);
-  ("succ", fun i -> Parser.SUCC i);
-  ("pred", fun i -> Parser.PRED i);
   ("iszero", fun i -> Parser.ISZERO i);
-  ("Nat", fun i -> Parser.NAT i);
   ("try", fun i -> Parser.TRY i);
   ("with", fun i -> Parser.WITH i);
   ("error", fun i -> Parser.ERROR i);
