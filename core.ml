@@ -188,6 +188,7 @@ let rec tyeqv ctx tyS tyT =
        (tyeqv ctx tyS1 tyT1) && (tyeqv ctx tyS2 tyT2)
   | (TyString,TyString) -> true
   | (TyTop,TyTop) -> true
+  | (TyBot,TyBot) -> true
   | (TyUnit,TyUnit) -> true
   | (TyId(b1),TyId(b2)) -> b1=b2
   | (TyFloat,TyFloat) -> true
@@ -215,6 +216,8 @@ let rec subtype ctx tyS tyT =
    let tyT = simplifyty ctx tyT in
    match (tyS,tyT) with
      (_,TyTop) -> 
+       true
+   | (TyBot,_) ->
        true
    | (TyArr(tyS1,tyS2),TyArr(tyT1,tyT2)) ->
        (subtype ctx tyT1 tyS1) && (subtype ctx tyS2 tyT2)
@@ -283,7 +286,7 @@ and meet ctx tyS tyT =
   | (TyArr(tyS1,tyS2),TyArr(tyT1,tyT2)) ->
       TyArr(join ctx tyS1 tyT1, meet ctx tyS2 tyT2)
   | _ -> 
-      raise Not_found
+      TyBot
 
 (* ------------------------   TYPING  ------------------------ *)
 
@@ -303,6 +306,7 @@ let rec typeof ctx t =
           TyArr(tyT11,tyT12) ->
             if subtype ctx tyT2 tyT11 then tyT12
             else error fi "parameter type mismatch"
+        | TyBot -> TyBot
         | _ -> error fi "arrow type expected")
   | TmTrue(fi) -> 
       TyBool
@@ -378,3 +382,7 @@ let rec typeof ctx t =
       (match ty1, ty2 with
         TyInt(_), TyInt(_) -> TyBool
       | _, _ -> error fi "terms not int")
+  | TmTry(fi, t1, t2) ->
+      join ctx (typeof ctx t1) (typeof ctx t2)
+  | TmError(fi) ->
+      TyBot

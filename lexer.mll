@@ -21,6 +21,7 @@ let reservedWords = [
   ("true", fun i -> Parser.TRUE i);
   ("false", fun i -> Parser.FALSE i);
   ("Bool", fun i -> Parser.BOOL i);
+  ("Bot", fun i -> Parser.TBOT i);
   ("let", fun i -> Parser.LET i);
   ("in", fun i -> Parser.IN i);
   ("fix", fun i -> Parser.FIX i);

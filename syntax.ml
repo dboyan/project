@@ -10,6 +10,7 @@ type ty =
     TyVar of int * int
   | TyId of string
   | TyTop
+  | TyBot
   | TyArr of ty * ty
   | TyBool
   | TyRecord of (string * ty) list
@@ -113,6 +114,7 @@ let tymap onvar c tyT =
   | TyId(b) as tyT -> tyT
   | TyArr(tyT1,tyT2) -> TyArr(walk c tyT1,walk c tyT2)
   | TyTop -> TyTop
+  | TyBot -> TyBot
   | TyBool -> TyBool
   | TyRecord(fieldtys) -> TyRecord(List.map (fun (li,tyTi) -> (li, walk c tyTi)) fieldtys)
   | TyString -> TyString
@@ -313,6 +315,7 @@ and printty_AType outer ctx tyT = match tyT with
             ^ " }]")
   | TyId(b) -> pr b
   | TyTop -> pr "Top"
+  | TyBot -> pr "Bot"
   | TyBool -> pr "Bool"
   | TyRecord(fields) ->
         let pf i (li,tyTi) =

@@ -8,6 +8,7 @@ type ty =
     TyVar of int * int
   | TyId of string
   | TyTop
+  | TyBot
   | TyArr of ty * ty
   | TyBool
   | TyRecord of (string * ty) list

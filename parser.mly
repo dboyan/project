@@ -33,6 +33,7 @@ open Range
 %token <Support.Error.info> TRUE
 %token <Support.Error.info> FALSE
 %token <Support.Error.info> BOOL
+%token <Support.Error.info> TBOT
 %token <Support.Error.info> LET
 %token <Support.Error.info> IN
 %token <Support.Error.info> FIX
@@ -173,6 +174,8 @@ AType :
       { fun ctx -> TyTop }
   | BOOL
       { fun ctx -> TyBool }
+  | TBOT
+      { fun ctx -> TyBot }
   | LCURLY FieldTypes RCURLY
       { fun ctx ->
           TyRecord($2 ctx 1) }
