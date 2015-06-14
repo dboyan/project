@@ -447,8 +447,10 @@ and printtm_AppTerm outer ctx t = match t with
       printtm_ATerm false ctx t2;
       cbox()
   | TmTimesfloat(_,t1,t2) ->
-       pr "timesfloat "; printtm_ATerm false ctx t2; 
-       pr " "; printtm_ATerm false ctx t2
+      pr "timesfloat "; printtm_ATerm false ctx t2; 
+      pr " "; printtm_ATerm false ctx t2
+  | TmIsZero(_,t1) ->
+      pr "iszero"; printtm_ATerm false ctx t1;
   | t -> printtm_PathTerm outer ctx t
 
 and printtm_PathTerm outer ctx t = match t with

@@ -102,12 +102,26 @@ let rec eval1 ctx t = match t with
       TmPlus(fi,TmInt(fi2,num1), eval1 ctx t2)
   | TmPlus(fi,t1,t2) ->
       TmPlus(fi, eval1 ctx t1, t2)
+  | TmPlusEx(fi,TmInt(_,num1),TmInt(_,num2)) -> 
+      if num1 + num2 >= 0 && num1 + num2 <= 65536 then TmInt(fi, num1 + num2)
+      else TmError(dummyinfo)
+  | TmPlusEx(fi,TmInt(fi2,num1),t2) ->
+      TmPlusEx(fi,TmInt(fi2,num1), eval1 ctx t2)
+  | TmPlusEx(fi,t1,t2) ->
+      TmPlusEx(fi, eval1 ctx t1, t2)
   | TmMinus(fi,TmInt(_,num1),TmInt(_,num2)) ->
       TmInt(fi,num1 - num2)
   | TmMinus(fi,TmInt(fi2,num1),t2) ->
       TmMinus(fi,TmInt(fi2,num1), eval1 ctx t2)
   | TmMinus(fi,t1,t2) ->
       TmMinus(fi, eval1 ctx t1, t2)
+  | TmMinusEx(fi,TmInt(_,num1),TmInt(_,num2)) -> 
+      if num1 - num2 >= 0 && num1 - num2 <= 65536 then TmInt(fi, num1 - num2)
+      else TmError(dummyinfo)
+  | TmMinusEx(fi,TmInt(fi2,num1),t2) ->
+      TmMinusEx(fi,TmInt(fi2,num1), eval1 ctx t2)
+  | TmMinusEx(fi,t1,t2) ->
+      TmMinusEx(fi, eval1 ctx t1, t2)
   | TmGreater(fi,TmInt(_,num1),TmInt(_,num2)) ->
       if num1 > num2 then TmTrue(dummyinfo)
       else TmFalse(dummyinfo)
