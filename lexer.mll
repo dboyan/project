@@ -21,6 +21,7 @@ let reservedWords = [
   ("true", fun i -> Parser.TRUE i);
   ("false", fun i -> Parser.FALSE i);
   ("Bool", fun i -> Parser.BOOL i);
+  ("Bot", fun i -> Parser.TBOT i);
   ("let", fun i -> Parser.LET i);
   ("in", fun i -> Parser.IN i);
   ("fix", fun i -> Parser.FIX i);
@@ -31,10 +32,7 @@ let reservedWords = [
   ("as", fun i -> Parser.AS i);
   ("timesfloat", fun i -> Parser.TIMESFLOAT i);
   ("Float", fun i -> Parser.UFLOAT i);
-  ("succ", fun i -> Parser.SUCC i);
-  ("pred", fun i -> Parser.PRED i);
   ("iszero", fun i -> Parser.ISZERO i);
-  ("Nat", fun i -> Parser.NAT i);
   ("try", fun i -> Parser.TRY i);
   ("with", fun i -> Parser.WITH i);
   ("error", fun i -> Parser.ERROR i);

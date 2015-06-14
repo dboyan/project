@@ -8,13 +8,13 @@ type ty =
     TyVar of int * int
   | TyId of string
   | TyTop
+  | TyBot
   | TyArr of ty * ty
   | TyBool
   | TyRecord of (string * ty) list
   | TyString
   | TyUnit
   | TyFloat
-  | TyNat
   | TyInt of (int * int) list
 
 type term =
@@ -33,9 +33,6 @@ type term =
   | TmAscribe of info * term * ty
   | TmFloat of info * float
   | TmTimesfloat of info * term * term
-  | TmZero of info
-  | TmSucc of info * term
-  | TmPred of info * term
   | TmIsZero of info * term
   | TmInert of info * ty
   | TmInt of info * int

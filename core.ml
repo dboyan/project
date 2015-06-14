@@ -8,9 +8,8 @@ open Range
 
 exception NoRuleApplies
 
-let rec isnumericval ctx t = match t with
-    TmZero(_) -> true
-  | TmSucc(_,t1) -> isnumericval ctx t1
+let rec isnumericty ctx t = match t with
+    TyInt(_) -> true
   | _ -> false
 
 let rec isval ctx t = match t with
@@ -19,14 +18,17 @@ let rec isval ctx t = match t with
   | TmString _  -> true
   | TmUnit(_)  -> true
   | TmFloat _  -> true
-  | t when isnumericval ctx t  -> true
   | TmAbs(_,_,_,_) -> true
   | TmRecord(_,fields) -> List.for_all (fun (l,ti) -> isval ctx ti) fields
   | TmInt(_,_) -> true
   | _ -> false
 
 let rec eval1 ctx t = match t with
-    TmApp(fi,TmAbs(_,x,tyT11,t12),v2) when isval ctx v2 ->
+    TmApp(_,TmError(fi),t2) ->
+      TmError(fi)
+  | TmApp(_,v1,TmError(fi)) when isval ctx v1 ->
+      TmError(fi)
+  | TmApp(fi,TmAbs(_,x,tyT11,t12),v2) when isval ctx v2 ->
       termSubstTop v2 t12
   | TmApp(fi,v1,t2) when isval ctx v1 ->
       let t2' = eval1 ctx t2 in
@@ -38,6 +40,8 @@ let rec eval1 ctx t = match t with
       t2
   | TmIf(_,TmFalse(_),t2,t3) ->
       t3
+  | TmIf(_,TmError(fi),t2,t3) ->
+      TmError(fi)
   | TmIf(fi,t1,t2,t3) ->
       let t1' = eval1 ctx t1 in
       TmIf(fi, t1', t2, t3)
@@ -87,20 +91,8 @@ let rec eval1 ctx t = match t with
   | TmTimesfloat(fi,t1,t2) ->
       let t1' = eval1 ctx t1 in
       TmTimesfloat(fi,t1',t2) 
-  | TmSucc(fi,t1) ->
-      let t1' = eval1 ctx t1 in
-      TmSucc(fi, t1')
-  | TmPred(_,TmZero(_)) ->
-      TmZero(dummyinfo)
-  | TmPred(_,TmSucc(_,nv1)) when (isnumericval ctx nv1) ->
-      nv1
-  | TmPred(fi,t1) ->
-      let t1' = eval1 ctx t1 in
-      TmPred(fi, t1')
-  | TmIsZero(_,TmZero(_)) ->
-      TmTrue(dummyinfo)
-  | TmIsZero(_,TmSucc(_,nv1)) when (isnumericval ctx nv1) ->
-      TmFalse(dummyinfo)
+  | TmIsZero(_,TmInt(_,n1)) ->
+      if n1 = 0 then TmTrue(dummyinfo) else TmFalse(dummyinfo)
   | TmIsZero(fi,t1) ->
       let t1' = eval1 ctx t1 in
       TmIsZero(fi, t1')
@@ -144,6 +136,16 @@ let rec eval1 ctx t = match t with
       TmLessEqual(fi,TmInt(fi2,num1), eval1 ctx t2)
   | TmLessEqual(fi,t1,t2) ->
       TmLessEqual(fi, eval1 ctx t1, t2)
+  | TmTry(fi,TmError(_),t2) ->
+      t2
+  | TmTry(fi,v1,t2) when isval ctx v1 ->
+      v1
+  | TmTry(fi,t1,t2) ->
+      TmTry(fi,eval1 ctx t1,t2)
+  | TmCast(fi,TmInt(fi2,num1),r1) ->
+      if in_range num1 r1 then TmInt(fi2,num1) else TmError(fi)
+  | TmCast(fi,t1,r1) ->
+      TmCast(fi,eval1 ctx t1,r1)
   | _ -> 
       raise NoRuleApplies
 
@@ -188,6 +190,7 @@ let rec tyeqv ctx tyS tyT =
        (tyeqv ctx tyS1 tyT1) && (tyeqv ctx tyS2 tyT2)
   | (TyString,TyString) -> true
   | (TyTop,TyTop) -> true
+  | (TyBot,TyBot) -> true
   | (TyUnit,TyUnit) -> true
   | (TyId(b1),TyId(b2)) -> b1=b2
   | (TyFloat,TyFloat) -> true
@@ -197,7 +200,6 @@ let rec tyeqv ctx tyS tyT =
       tyeqv ctx tyS (gettyabb ctx i)
   | (TyVar(i,_),TyVar(j,_)) -> i=j
   | (TyBool,TyBool) -> true
-  | (TyNat,TyNat) -> true
   | (TyRecord(fields1),TyRecord(fields2)) -> 
        List.length fields1 = List.length fields2
        &&                                         
@@ -215,6 +217,8 @@ let rec subtype ctx tyS tyT =
    let tyT = simplifyty ctx tyT in
    match (tyS,tyT) with
      (_,TyTop) -> 
+       true
+   | (TyBot,_) ->
        true
    | (TyArr(tyS1,tyS2),TyArr(tyT1,tyT2)) ->
        (subtype ctx tyT1 tyS1) && (subtype ctx tyS2 tyT2)
@@ -283,7 +287,7 @@ and meet ctx tyS tyT =
   | (TyArr(tyS1,tyS2),TyArr(tyT1,tyT2)) ->
       TyArr(join ctx tyS1 tyT1, meet ctx tyS2 tyT2)
   | _ -> 
-      raise Not_found
+      TyBot
 
 (* ------------------------   TYPING  ------------------------ *)
 
@@ -303,6 +307,7 @@ let rec typeof ctx t =
           TyArr(tyT11,tyT12) ->
             if subtype ctx tyT2 tyT11 then tyT12
             else error fi "parameter type mismatch"
+        | TyBot -> TyBot
         | _ -> error fi "arrow type expected")
   | TmTrue(fi) -> 
       TyBool
@@ -345,16 +350,8 @@ let rec typeof ctx t =
       if subtype ctx (typeof ctx t1) TyFloat
       && subtype ctx (typeof ctx t2) TyFloat then TyFloat
       else error fi "argument of timesfloat is not a number"
-  | TmZero(fi) ->
-      TyNat
-  | TmSucc(fi,t1) ->
-      if subtype ctx (typeof ctx t1) TyNat then TyNat
-      else error fi "argument of succ is not a number"
-  | TmPred(fi,t1) ->
-      if subtype ctx (typeof ctx t1) TyNat then TyNat
-      else error fi "argument of pred is not a number"
   | TmIsZero(fi,t1) ->
-      if subtype ctx (typeof ctx t1) TyNat then TyBool
+      if isnumericty ctx (typeof ctx t1) then TyBool
       else error fi "argument of iszero is not a number"
   | TmInt(fi,num) -> TyInt([(num,num)])
   | TmPlus(fi,t1,t2) -> 
@@ -372,9 +369,31 @@ let rec typeof ctx t =
       (match ty1, ty2 with
         TyInt(l1), TyInt(l2) -> TyInt(minus_range l1 l2)
       | _, _ -> error fi "terms not int")
+  | TmPlusEx(fi,t1,t2) ->
+      let ty1 = typeof ctx t1 in
+      let ty2 = typeof ctx t2 in
+      (match ty1, ty2 with
+        TyInt(_), TyInt(_) ->
+          TyInt([(0,65535)])
+       | _ -> error fi "terms not int")
+  | TmMinusEx(fi,t1,t2) ->
+      let ty1 = typeof ctx t1 in
+      let ty2 = typeof ctx t2 in
+      (match ty1, ty2 with
+        TyInt(_), TyInt(_) ->
+          TyInt([(0,65535)])
+       | _ -> error fi "terms not int")
   | TmGreater(fi,t1,t2) | TmGreaterEqual(fi,t1,t2) | TmLess(fi,t1,t2) | TmLessEqual(fi,t1,t2) ->
       let ty1 = typeof ctx t1 in
       let ty2 = typeof ctx t2 in
       (match ty1, ty2 with
         TyInt(_), TyInt(_) -> TyBool
       | _, _ -> error fi "terms not int")
+  | TmTry(fi, t1, t2) ->
+      join ctx (typeof ctx t1) (typeof ctx t2)
+  | TmError(fi) ->
+      TyBot
+  | TmCast(fi, t1, rl) ->
+      let ty1 = typeof ctx t1 in
+      (match ty1 with TyInt(_) -> TyInt(rl)
+                    | _ -> error fi "terms not int")

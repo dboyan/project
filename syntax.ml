@@ -10,13 +10,13 @@ type ty =
     TyVar of int * int
   | TyId of string
   | TyTop
+  | TyBot
   | TyArr of ty * ty
   | TyBool
   | TyRecord of (string * ty) list
   | TyString
   | TyUnit
   | TyFloat
-  | TyNat
   | TyInt of (int * int) list
 
 type term =
@@ -35,9 +35,6 @@ type term =
   | TmAscribe of info * term * ty
   | TmFloat of info * float
   | TmTimesfloat of info * term * term
-  | TmZero of info
-  | TmSucc of info * term
-  | TmPred of info * term
   | TmIsZero of info * term
   | TmInert of info * ty
   | TmInt of info * int
@@ -113,12 +110,12 @@ let tymap onvar c tyT =
   | TyId(b) as tyT -> tyT
   | TyArr(tyT1,tyT2) -> TyArr(walk c tyT1,walk c tyT2)
   | TyTop -> TyTop
+  | TyBot -> TyBot
   | TyBool -> TyBool
   | TyRecord(fieldtys) -> TyRecord(List.map (fun (li,tyTi) -> (li, walk c tyTi)) fieldtys)
   | TyString -> TyString
   | TyUnit -> TyUnit
   | TyFloat -> TyFloat
-  | TyNat -> TyNat
   | TyInt(l) -> TyInt(l)
   in walk c tyT
 
@@ -142,17 +139,19 @@ let tmmap onvar ontype c t =
   | TmAscribe(fi,t1,tyT1) -> TmAscribe(fi,walk c t1,ontype c tyT1)
   | TmFloat _ as t -> t
   | TmTimesfloat(fi,t1,t2) -> TmTimesfloat(fi, walk c t1, walk c t2)
-  | TmZero(fi)      -> TmZero(fi)
-  | TmSucc(fi,t1)   -> TmSucc(fi, walk c t1)
-  | TmPred(fi,t1)   -> TmPred(fi, walk c t1)
   | TmIsZero(fi,t1) -> TmIsZero(fi, walk c t1)
   | TmInt(fi,num) -> TmInt(fi,num)
   | TmPlus(fi,t1,t2) -> TmPlus(fi, walk c t1, walk c t2)
   | TmMinus(fi,t1,t2) -> TmMinus(fi, walk c t1, walk c t2)
+  | TmPlusEx(fi,t1,t2) -> TmPlusEx(fi,walk c t1,walk c t2)
+  | TmMinusEx(fi,t1,t2) -> TmMinusEx(fi,walk c t1,walk c t2)
   | TmGreater(fi,t1,t2) -> TmGreater(fi, walk c t1, walk c t2)
   | TmGreaterEqual(fi,t1,t2) -> TmGreaterEqual(fi, walk c t1, walk c t2)
   | TmLess(fi,t1,t2) -> TmLess(fi, walk c t1, walk c t2)
   | TmLessEqual(fi,t1,t2) -> TmLessEqual(fi, walk c t1, walk c t2)
+  | TmError(_) as t -> t
+  | TmTry(fi,t1,t2) -> TmTry(fi,walk c t1,walk c t2)
+  | TmCast(fi,t1,r1) -> TmCast(fi,walk c t1,r1)
   in walk c t
 
 let typeShiftAbove d c tyT =
@@ -250,17 +249,19 @@ let tmInfo t = match t with
   | TmAscribe(fi,_,_) -> fi
   | TmFloat(fi,_) -> fi
   | TmTimesfloat(fi,_,_) -> fi
-  | TmZero(fi) -> fi
-  | TmSucc(fi,_) -> fi
-  | TmPred(fi,_) -> fi
   | TmIsZero(fi,_) -> fi 
   | TmInt(fi,_) -> fi 
   | TmPlus(fi,_,_) -> fi 
   | TmMinus(fi,_,_) -> fi 
+  | TmPlusEx(fi,_,_) -> fi
+  | TmMinusEx(fi,_,_) -> fi
   | TmGreater(fi,_,_) -> fi 
   | TmGreaterEqual(fi,_,_) -> fi 
   | TmLess(fi,_,_) -> fi 
   | TmLessEqual(fi,_,_) -> fi 
+  | TmError(fi) -> fi
+  | TmTry(fi,_,_) -> fi
+  | TmCast(fi,_,_) -> fi
 
 (* ---------------------------------------------------------------------- *)
 (* Printing *)
@@ -313,6 +314,7 @@ and printty_AType outer ctx tyT = match tyT with
             ^ " }]")
   | TyId(b) -> pr b
   | TyTop -> pr "Top"
+  | TyBot -> pr "Bot"
   | TyBool -> pr "Bool"
   | TyRecord(fields) ->
         let pf i (li,tyTi) =
@@ -328,7 +330,6 @@ and printty_AType outer ctx tyT = match tyT with
   | TyString -> pr "String"
   | TyUnit -> pr "Unit"
   | TyFloat -> pr "Float"
-  | TyNat -> pr "Nat"
   | TyInt(l) -> pr "Int: "; print_range l
   | tyT -> pr "("; printty_Type outer ctx tyT; pr ")"
 
@@ -352,6 +353,14 @@ let rec printtm_Term outer ctx t = match t with
        print_space();
        pr "else ";
        printtm_Term false ctx t3;
+       cbox()
+  | TmTry(fi, t1, t2) ->
+       obox0();
+       pr "try ";
+       printtm_Term false ctx t1;
+       print_space();
+       pr "with ";
+       printtm_Term false ctx t2;
        cbox()
   | TmLet(fi, x, t1, t2) ->
        obox0();
@@ -377,6 +386,20 @@ let rec printtm_Term outer ctx t = match t with
        printtm_Term false ctx t1;
        print_space();
        pr "- ";
+       printtm_Term false ctx t2;
+       cbox();
+  | TmPlusEx(fi, t1, t2) ->
+       obox();
+       printtm_Term false ctx t1;
+       print_space();
+       pr "+? ";
+       printtm_Term false ctx t2;
+       cbox();
+  | TmMinusEx(fi, t1, t2) ->
+       obox();
+       printtm_Term false ctx t1;
+       print_space();
+       pr "-? ";
        printtm_Term false ctx t2;
        cbox();
   | TmGreater(fi, t1, t2) ->
@@ -407,6 +430,13 @@ let rec printtm_Term outer ctx t = match t with
        pr "<= ";
        printtm_Term false ctx t2;
        cbox();
+  | TmCast(fi,t1,r1) ->
+       obox();
+       pr "cast ";
+       print_range r1;
+       print_space();
+       printtm_Term false ctx t1;
+       cbox();
   | t -> printtm_AppTerm outer ctx t
 
 and printtm_AppTerm outer ctx t = match t with
@@ -419,10 +449,6 @@ and printtm_AppTerm outer ctx t = match t with
   | TmTimesfloat(_,t1,t2) ->
        pr "timesfloat "; printtm_ATerm false ctx t2; 
        pr " "; printtm_ATerm false ctx t2
-  | TmPred(_,t1) ->
-       pr "pred "; printtm_ATerm false ctx t1
-  | TmIsZero(_,t1) ->
-       pr "iszero "; printtm_ATerm false ctx t1
   | t -> printtm_PathTerm outer ctx t
 
 and printtm_PathTerm outer ctx t = match t with
@@ -465,15 +491,8 @@ and printtm_ATerm outer ctx t = match t with
   | TmString(_,s) -> pr ("\"" ^ s ^ "\"")
   | TmUnit(_) -> pr "unit"
   | TmFloat(_,s) -> pr (string_of_float s)
-  | TmZero(fi) ->
-       pr "0"
-  | TmSucc(_,t1) ->
-     let rec f n t = match t with
-         TmZero(_) -> pr (string_of_int n)
-       | TmSucc(_,s) -> f (n+1) s
-       | _ -> (pr "(succ "; printtm_ATerm false ctx t1; pr ")")
-     in f 1 t1
   | TmInt(_,num) -> print_int num
+  | TmError(_) -> pr "error"
   | t -> pr "("; printtm_Term outer ctx t; pr ")"
 
 let printtm ctx t = printtm_Term true ctx t 
