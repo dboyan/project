@@ -26,7 +26,11 @@ let rec isval ctx t = match t with
   | _ -> false
 
 let rec eval1 ctx t = match t with
-    TmApp(fi,TmAbs(_,x,tyT11,t12),v2) when isval ctx v2 ->
+    TmApp(_,TmError(fi),t2) ->
+      TmError(fi)
+  | TmApp(_,v1,TmError(fi)) when isval ctx v1 ->
+      TmError(fi)
+  | TmApp(fi,TmAbs(_,x,tyT11,t12),v2) when isval ctx v2 ->
       termSubstTop v2 t12
   | TmApp(fi,v1,t2) when isval ctx v1 ->
       let t2' = eval1 ctx t2 in
@@ -38,6 +42,8 @@ let rec eval1 ctx t = match t with
       t2
   | TmIf(_,TmFalse(_),t2,t3) ->
       t3
+  | TmIf(_,TmError(fi),t2,t3) ->
+      TmError(fi)
   | TmIf(fi,t1,t2,t3) ->
       let t1' = eval1 ctx t1 in
       TmIf(fi, t1', t2, t3)
@@ -144,6 +150,12 @@ let rec eval1 ctx t = match t with
       TmLessEqual(fi,TmInt(fi2,num1), eval1 ctx t2)
   | TmLessEqual(fi,t1,t2) ->
       TmLessEqual(fi, eval1 ctx t1, t2)
+  | TmTry(fi,TmError(_),t2) ->
+      t2
+  | TmTry(fi,v1,t2) when isval ctx v1 ->
+      v1
+  | TmTry(fi,t1,t2) ->
+      TmTry(fi,eval1 ctx t1,t2)
   | _ -> 
       raise NoRuleApplies
 
@@ -386,3 +398,7 @@ let rec typeof ctx t =
       join ctx (typeof ctx t1) (typeof ctx t2)
   | TmError(fi) ->
       TyBot
+  | TmCast(fi, t1, rl) ->
+      let ty1 = typeof ctx t1 in
+      (match ty1 with TyInt(_) -> TyInt(rl)
+                    | _ -> error fi "terms not int")

@@ -155,6 +155,8 @@ let tmmap onvar ontype c t =
   | TmGreaterEqual(fi,t1,t2) -> TmGreaterEqual(fi, walk c t1, walk c t2)
   | TmLess(fi,t1,t2) -> TmLess(fi, walk c t1, walk c t2)
   | TmLessEqual(fi,t1,t2) -> TmLessEqual(fi, walk c t1, walk c t2)
+  | TmError(_) as t -> t
+  | TmTry(fi,t1,t2) -> TmTry(fi,walk c t1,walk c t2)
   in walk c t
 
 let typeShiftAbove d c tyT =
@@ -263,6 +265,8 @@ let tmInfo t = match t with
   | TmGreaterEqual(fi,_,_) -> fi 
   | TmLess(fi,_,_) -> fi 
   | TmLessEqual(fi,_,_) -> fi 
+  | TmError(fi) -> fi
+  | TmTry(fi,_,_) -> fi
 
 (* ---------------------------------------------------------------------- *)
 (* Printing *)
@@ -477,6 +481,7 @@ and printtm_ATerm outer ctx t = match t with
        | _ -> (pr "(succ "; printtm_ATerm false ctx t1; pr ")")
      in f 1 t1
   | TmInt(_,num) -> print_int num
+  | TmError(_) -> pr "error"
   | t -> pr "("; printtm_Term outer ctx t; pr ")"
 
 let printtm ctx t = printtm_Term true ctx t 
