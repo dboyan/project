@@ -58,3 +58,7 @@ let rec sub_range r1 r2 =
 let union_range r1 r2 = 
     let union = r1 @ r2 in
     simplify_range union
+
+let in_range n r =
+    let pred (left,right) = (n >= left) && (n <= right) in
+    List.exists pred r

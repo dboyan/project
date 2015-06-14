@@ -157,6 +157,7 @@ let tmmap onvar ontype c t =
   | TmLessEqual(fi,t1,t2) -> TmLessEqual(fi, walk c t1, walk c t2)
   | TmError(_) as t -> t
   | TmTry(fi,t1,t2) -> TmTry(fi,walk c t1,walk c t2)
+  | TmCast(fi,t1,r1) -> TmCast(fi,walk c t1,r1)
   in walk c t
 
 let typeShiftAbove d c tyT =
@@ -267,6 +268,7 @@ let tmInfo t = match t with
   | TmLessEqual(fi,_,_) -> fi 
   | TmError(fi) -> fi
   | TmTry(fi,_,_) -> fi
+  | TmCast(fi,_,_) -> fi
 
 (* ---------------------------------------------------------------------- *)
 (* Printing *)

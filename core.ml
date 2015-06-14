@@ -156,6 +156,10 @@ let rec eval1 ctx t = match t with
       v1
   | TmTry(fi,t1,t2) ->
       TmTry(fi,eval1 ctx t1,t2)
+  | TmCast(fi,TmInt(fi2,num1),r1) ->
+      if in_range num1 r1 then TmInt(fi2,num1) else TmError(fi)
+  | TmCast(fi,t1,r1) ->
+      TmCast(fi,eval1 ctx t1,r1)
   | _ -> 
       raise NoRuleApplies
 
