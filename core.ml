@@ -56,17 +56,23 @@ let rec eval1 ctx t = match t with
           (l, ti')::rest
       in let fields' = evalafield fields in
       TmRecord(fi, fields')
+  | TmProj(_, TmError(fi), l) ->
+      TmError(fi)
   | TmProj(fi, (TmRecord(_, fields) as v1), l) when isval ctx v1 ->
       (try List.assoc l fields
        with Not_found -> raise NoRuleApplies)
   | TmProj(fi, t1, l) ->
       let t1' = eval1 ctx t1 in
       TmProj(fi, t1', l)
+  | TmLet(_,x,TmError(fi),t2) ->
+      TmError(fi) 
   | TmLet(fi,x,v1,t2) when isval ctx v1 ->
       termSubstTop v1 t2 
   | TmLet(fi,x,t1,t2) ->
       let t1' = eval1 ctx t1 in
       TmLet(fi, x, t1', t2) 
+  | TmFix(_, TmError(fi)) ->
+      TmError(fi)
   | TmFix(fi,v1) as t when isval ctx v1 ->
       (match v1 with
          TmAbs(_,_,_,t12) -> termSubstTop t t12
@@ -91,17 +97,27 @@ let rec eval1 ctx t = match t with
   | TmTimesfloat(fi,t1,t2) ->
       let t1' = eval1 ctx t1 in
       TmTimesfloat(fi,t1',t2) 
+  | TmIsZero(_,TmError(fi)) ->
+      TmError(fi)
   | TmIsZero(_,TmInt(_,n1)) ->
       if n1 = 0 then TmTrue(dummyinfo) else TmFalse(dummyinfo)
   | TmIsZero(fi,t1) ->
       let t1' = eval1 ctx t1 in
       TmIsZero(fi, t1')
+  | TmPlus(_,TmError(fi),_) -> 
+      TmError(fi)
+  | TmPlus(_,_,TmError(fi)) -> 
+      TmError(fi)
   | TmPlus(fi,TmInt(_,num1),TmInt(_,num2)) -> 
       TmInt(fi,num1 + num2)
   | TmPlus(fi,TmInt(fi2,num1),t2) ->
       TmPlus(fi,TmInt(fi2,num1), eval1 ctx t2)
   | TmPlus(fi,t1,t2) ->
       TmPlus(fi, eval1 ctx t1, t2)
+  | TmPlusEx(_,TmError(fi),_) -> 
+      TmError(fi)
+  | TmPlusEx(_,_,TmError(fi)) -> 
+      TmError(fi)
   | TmPlusEx(fi,TmInt(_,num1),TmInt(_,num2)) -> 
       if num1 + num2 >= 0 && num1 + num2 <= 65536 then TmInt(fi, num1 + num2)
       else TmError(dummyinfo)
@@ -109,12 +125,20 @@ let rec eval1 ctx t = match t with
       TmPlusEx(fi,TmInt(fi2,num1), eval1 ctx t2)
   | TmPlusEx(fi,t1,t2) ->
       TmPlusEx(fi, eval1 ctx t1, t2)
+  | TmMinus(_,TmError(fi),_) -> 
+      TmError(fi)
+  | TmMinus(_,_,TmError(fi)) -> 
+      TmError(fi)
   | TmMinus(fi,TmInt(_,num1),TmInt(_,num2)) ->
       TmInt(fi,num1 - num2)
   | TmMinus(fi,TmInt(fi2,num1),t2) ->
       TmMinus(fi,TmInt(fi2,num1), eval1 ctx t2)
   | TmMinus(fi,t1,t2) ->
       TmMinus(fi, eval1 ctx t1, t2)
+  | TmMinusEx(_,TmError(fi),_) -> 
+      TmError(fi)
+  | TmMinusEx(_,_,TmError(fi)) -> 
+      TmError(fi)
   | TmMinusEx(fi,TmInt(_,num1),TmInt(_,num2)) -> 
       if num1 - num2 >= 0 && num1 - num2 <= 65536 then TmInt(fi, num1 - num2)
       else TmError(dummyinfo)
@@ -122,6 +146,10 @@ let rec eval1 ctx t = match t with
       TmMinusEx(fi,TmInt(fi2,num1), eval1 ctx t2)
   | TmMinusEx(fi,t1,t2) ->
       TmMinusEx(fi, eval1 ctx t1, t2)
+  | TmGreater(_,TmError(fi),_) -> 
+      TmError(fi)
+  | TmGreater(_,_,TmError(fi)) -> 
+      TmError(fi)
   | TmGreater(fi,TmInt(_,num1),TmInt(_,num2)) ->
       if num1 > num2 then TmTrue(dummyinfo)
       else TmFalse(dummyinfo)
@@ -129,6 +157,10 @@ let rec eval1 ctx t = match t with
       TmGreater(fi,TmInt(fi2,num1), eval1 ctx t2)
   | TmGreater(fi,t1,t2) ->
       TmGreater(fi, eval1 ctx t1, t2)
+  | TmGreaterEqual(_,TmError(fi),_) -> 
+      TmError(fi)
+  | TmGreaterEqual(_,_,TmError(fi)) -> 
+      TmError(fi)
   | TmGreaterEqual(fi,TmInt(_,num1),TmInt(_,num2)) ->
       if num1 >= num2 then TmTrue(dummyinfo)
       else TmFalse(dummyinfo)
@@ -136,6 +168,10 @@ let rec eval1 ctx t = match t with
       TmGreaterEqual(fi,TmInt(fi2,num1), eval1 ctx t2)
   | TmGreaterEqual(fi,t1,t2) ->
       TmGreaterEqual(fi, eval1 ctx t1, t2)
+  | TmLess(_,TmError(fi),_) -> 
+      TmError(fi)
+  | TmLess(_,_,TmError(fi)) -> 
+      TmError(fi)
   | TmLess(fi,TmInt(_,num1),TmInt(_,num2)) ->
       if num1 < num2 then TmTrue(dummyinfo)
       else TmFalse(dummyinfo)
@@ -143,6 +179,10 @@ let rec eval1 ctx t = match t with
       TmLess(fi,TmInt(fi2,num1), eval1 ctx t2)
   | TmLess(fi,t1,t2) ->
       TmLess(fi, eval1 ctx t1, t2)
+  | TmLessEqual(_,TmError(fi),_) -> 
+      TmError(fi)
+  | TmLessEqual(_,_,TmError(fi)) -> 
+      TmError(fi)
   | TmLessEqual(fi,TmInt(_,num1),TmInt(_,num2)) ->
       if num1 <= num2 then TmTrue(dummyinfo)
       else TmFalse(dummyinfo)
@@ -156,6 +196,8 @@ let rec eval1 ctx t = match t with
       v1
   | TmTry(fi,t1,t2) ->
       TmTry(fi,eval1 ctx t1,t2)
+  | TmCast(_,TmError(fi),r1) ->
+      TmError(fi)
   | TmCast(fi,TmInt(fi2,num1),r1) ->
       if in_range num1 r1 then TmInt(fi2,num1) else TmError(fi)
   | TmCast(fi,t1,r1) ->
